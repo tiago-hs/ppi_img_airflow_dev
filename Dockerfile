@@ -22,6 +22,8 @@ ENV LC_MESSAGES en_US.UTF-8
 # Disable noisy "Handling signal" log messages:
 # ENV GUNICORN_CMD_ARGS --log-level WARNING
 
+COPY ./requirements.txt .
+
 RUN set -ex \
     && buildDeps=' \
         freetds-dev \
@@ -34,6 +36,7 @@ RUN set -ex \
         git \
         g++ \
         gcc \
+        curl \
         libgomp1 \
         libstdc++6 \
     ' \
@@ -42,6 +45,12 @@ RUN set -ex \
     && apt-get install -yqq --no-install-recommends \
         $buildDeps \
         freetds-bin \
+        unixodbc \
+        libodbc1 \
+        odbcinst \
+        odbcinst1debian2 \
+        openssl \
+        wkhtmltopdf \
         build-essential \
         default-libmysqlclient-dev \
         apt-utils \
@@ -49,19 +58,22 @@ RUN set -ex \
         rsync \
         netcat-traditional \
         locales \
+        apt-transport-https \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/12/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
     && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
-    && useradd -ms /bin/bash -d ${AIRFLOW_USER_HOME} airflow \
-    && pip install -U pip setuptools wheel \
-    && pip install pytz \
-    && pip install pyOpenSSL \
-    && pip install ndg-httpsclient \
-    && pip install pyasn1 \
+    && useradd -ms /bin/bash -d ${AIRFLOW_USER_HOME} airflow 
+
+RUN pip install -U pip setuptools wheel \
     && pip install cryptography \
-    && pip install pandas==1.3.5 \
     && pip install apache-airflow[crypto,celery,postgres,hive,jdbc,ssh${AIRFLOW_DEPS:+,}${AIRFLOW_DEPS}]==${AIRFLOW_VERSION} \
     && pip install redis==5.0.3 \
+    && pip install -r requirements.txt \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     # && apt-get purge --auto-remove -yqq $buildDeps \ investigar por que essa linha quebra as
     # dependencias
