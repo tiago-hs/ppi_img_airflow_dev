@@ -1,11 +1,13 @@
-version: '2.1'
+# TODO atualizar a versão das imagens 
+version: '3.8'
 services:
     redis:
-        image: 'redis:5.0.5'
+        image: redis:7.0
+        # image: redis:7.2-bookworm
         # command: redis-server --requirepass redispass
 
     postgres:
-        image: postgres:9.6
+        image: postgres:16
         environment:
             - POSTGRES_USER=airflow
             - POSTGRES_PASSWORD=airflow
@@ -16,19 +18,19 @@ services:
         #     - ./pgdata:/var/lib/postgresql/data/pgdata
 
     webserver:
-        image: puckel/docker-airflow:1.10.9
+        image: ppi_airflow_img_dev:1.0
         restart: always
         depends_on:
             - postgres
             - redis
         environment:
             - LOAD_EX=n
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - FERNET_KEY=${AIRFLOW__CORE__FERNET_KEY}
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
-            # - REDIS_PASSWORD=redispass
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+            - REDIS_PASSWORD=redispass
         volumes:
             - ./dags:/usr/local/airflow/dags
             # Uncomment to include custom plugins
@@ -43,7 +45,7 @@ services:
             retries: 3
 
     flower:
-        image: puckel/docker-airflow:1.10.9
+        image: ppi_airflow_img_dev:1.0
         restart: always
         depends_on:
             - redis
@@ -55,7 +57,7 @@ services:
         command: flower
 
     scheduler:
-        image: puckel/docker-airflow:1.10.9
+        image: ppi_airflow_img_dev:1.0
         restart: always
         depends_on:
             - webserver
@@ -65,16 +67,16 @@ services:
             # - ./plugins:/usr/local/airflow/plugins
         environment:
             - LOAD_EX=n
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - FERNET_KEY=BRdkQZut1wl5pV20j6-YvnCn0QbAflXhox0Pt0h16kA=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
-            # - REDIS_PASSWORD=redispass
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+            - REDIS_PASSWORD=redispass
         command: scheduler
 
     worker:
-        image: puckel/docker-airflow:1.10.9
+        image: ppi_airflow_img_dev:1.0
         restart: always
         depends_on:
             - scheduler
@@ -83,10 +85,10 @@ services:
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
-            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - FERNET_KEY=BRdkQZut1wl5pV20j6-YvnCn0QbAflXhox0Pt0h16kA=
             - EXECUTOR=Celery
-            # - POSTGRES_USER=airflow
-            # - POSTGRES_PASSWORD=airflow
-            # - POSTGRES_DB=airflow
-            # - REDIS_PASSWORD=redispass
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+            - REDIS_PASSWORD=redispass
         command: worker

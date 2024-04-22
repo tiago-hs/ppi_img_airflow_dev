@@ -8,8 +8,10 @@
 TRY_LOOP="20"
 
 # Global defaults and back-compat
-: "${AIRFLOW_HOME:="/usr/local/airflow"}"
+: "${AIRFLOW_HOME:="/usr/local/airflow
+"}"
 : "${AIRFLOW__CORE__FERNET_KEY:=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}}"
+: "${AIRFLOW__WEBSERVER__SECRET_KEY=$(openssl rand -hex 30)}"
 : "${AIRFLOW__CORE__EXECUTOR:=${EXECUTOR:-Sequential}Executor}"
 
 # Load DAGs examples (default: Yes)
@@ -22,6 +24,7 @@ export \
   AIRFLOW__CORE__EXECUTOR \
   AIRFLOW__CORE__FERNET_KEY \
   AIRFLOW__CORE__LOAD_EXAMPLES \
+  AIRFLOW__WEBSERVER__SECRET_KEY \
 
 # Install custom python package if requirements.txt is present
 if [ -e "/requirements.txt" ]; then
@@ -109,12 +112,13 @@ fi
 
 case "$1" in
   webserver)
-    airflow initdb
+    airflow db init
     if [ "$AIRFLOW__CORE__EXECUTOR" = "LocalExecutor" ] || [ "$AIRFLOW__CORE__EXECUTOR" = "SequentialExecutor" ]; then
       # With the "Local" and "Sequential" executors it should all run in one container.
       airflow scheduler &
     fi
-    exec airflow webserver
+    airflow users create -r Admin -u admin -e admin@example.com -f admin -l user -p admin123
+    exec airflow "$@" 
     ;;
   worker|scheduler)
     # Give the webserver time to run initdb.
