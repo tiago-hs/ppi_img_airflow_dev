@@ -51,7 +51,7 @@ services:
             - redis
         environment:
             - EXECUTOR=Celery
-            # - REDIS_PASSWORD=redispass
+            - REDIS_PASSWORD=redispass
         ports:
             - "5555:5555"
         command: flower
